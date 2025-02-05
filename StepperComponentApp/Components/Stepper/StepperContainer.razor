@@ -1,0 +1,168 @@
+﻿@* https://blazor-university.com/templating-components-with-renderfragements/creating-a-tabcontrol/ *@
+@using StepperComponentApp.Components.Stepper.Models
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
+
+<style>
+    .stepper-step {
+        padding: 6px 10px;
+        border: 1px solid #ff5444;
+        border-radius: 20px;
+    }
+</style>
+<link href="https://cdn.jsdelivr.net/npm/bs-stepper/dist/css/bs-stepper.min.css" rel="stylesheet" />
+
+<div id="stepper1" class="bs-stepper linear">
+    <CascadingValue Value="this">
+        <div class="bs-stepper-header" role="tablist">
+            @{
+                int sequenceNo = 0;
+            }
+            @foreach (var item in stepperItems)
+            {
+                sequenceNo++;
+                string ActiveStepClass = "";
+                string ariaSelected = "false";
+                string disabled = "true";
+                if (ActiveStep == item)
+                {
+                    ActiveStepClass = "active";
+                    ariaSelected = "true";
+                    disabled = "false";
+                }
+                <div class="step @ActiveStepClass" data-target="#stepper_step_@item.SequenceNo">
+                    <button type="button" class="step-trigger" role="tab" id="stepper_trigger_@item.SequenceNo" @onclick="@((()=> ActivateStepperItem(item)))"
+                            aria-controls="stepper_step_@item.SequenceNo">
+                        <span class="bs-stepper-circle">@item.SequenceNo</span>
+                        <span class="bs-stepper-label">
+                            @if (StepperItemText != null)
+                            {
+                                @StepperItemText(item)
+                            }
+                            else
+                            {
+                                @item.Name
+                            }
+                        </span>
+                    </button>
+                </div>
+                @if (sequenceNo < stepperItems.Count)
+                {
+                    <div class="bs-stepper-line"></div>
+                }
+            }
+        </div>
+
+        <div class="bs-stepper-content">
+            <form onsubmit="return false">
+                @ChildContent
+            </form>
+            <div class="mt-3 d-flex justify-content-between">
+                @foreach (var item in stepperItems)
+                {
+                    if (item.SequenceNo == 1)
+                    {
+                        if (ActiveStep == item)
+                        {
+                            <button class="btn btn-primary" @onclick="@(()=>NavigateToStep(+1))">Next</button>
+                        }
+                    }
+                    else if (item.SequenceNo > 1 && item.SequenceNo < stepperItems.Count)
+                    {
+                        if (ActiveStep == item)
+                        {
+                            <button class="btn btn-danger" @onclick="@(()=>NavigateToStep(-1))">Prev</button>
+                            <button class="btn btn-primary" @onclick="@(()=>NavigateToStep(+1))">Next</button>
+                        }
+                    }
+                    else
+                    {
+                        if (ActiveStep == item)
+                        {
+                            <button class="btn btn-primary" @onclick="@(()=>NavigateToStep(-1))">Prev</button>
+                            <button class="btn btn-success" @onclick="@(()=>NavigateToStep(-1))">Submit</button>
+                        }
+                    }
+                }
+            </div>
+        </div>
+
+        @* <div class="row">
+        @if (Step == 1)
+        {
+        <div class="col">
+        <button class="btn btn-sm btn-outline-primary" @onclick="@(()=>NavigateToStep(Step+1))">next</button>
+        </div>
+        }
+        else if (Step == stepperItems.Count)
+        {
+        <div class="col">
+        <button class="btn btn-sm btn-outline-primary" @onclick="@(()=>NavigateToStep(Step-1))">prev</button>
+        <button class="btn btn-sm btn-outline-success">Submit</button>
+        </div>
+        }
+        else
+        {
+        <div class="col">
+        <button class="btn btn-sm btn-outline-primary" @onclick="@(()=>NavigateToStep(Step-1))">prev</button>
+        <button class="btn btn-sm btn-outline-primary" @onclick="@(()=>NavigateToStep(Step+1))">next</button>
+        </div>
+        }
+        </div> *@
+    </CascadingValue>
+</div>
+
+@code {
+    List<StepperItem> stepperItems = new();
+
+    [Parameter]
+    public List<StepperStepModel> Steps { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment<StepperItem> StepperItemText { get; set; }
+
+    [Parameter]
+    public int Step { get; set; } = 1;
+
+    public StepperItem ActiveStep { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    internal void AddStepperItem(StepperItem stepperItem)
+    {
+        stepperItems.Add(stepperItem);
+        if (stepperItems.Count == 1)
+        {
+            ActiveStep = stepperItem;
+        }
+        StateHasChanged();
+    }
+
+    internal void ActivateStepperItem(StepperItem item)
+    {
+        ActiveStep = item;
+    }
+
+    internal async void NavigateToStep(int step)
+    {
+        // if (step == 1)
+        // {
+        //     Step = step;
+        // }
+        // else if (step <= Steps.Count)
+        // {
+        //     Step = step;
+        // }
+
+        var newStep = stepperItems.FirstOrDefault(o => o.SequenceNo == ActiveStep.SequenceNo + (step));
+        ActiveStep = newStep;
+        await ProtectedSessionStore.SetAsync("current-step", Step);
+    }
+}

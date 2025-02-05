@@ -1,0 +1,39 @@
+﻿@if (StepperContainer.ActiveStep == this)
+{
+    string activeStepperBodyClass = "active dstepper-block";
+
+    <div id="stepper_step_@SequenceNo" role="tabpanel" class="bs-stepper-pane @activeStepperBodyClass" aria-labelledby="stepper_trigger_@SequenceNo">
+        @ChildContent
+    </div>
+    
+}
+
+@code {
+    [CascadingParameter]
+    private StepperContainer StepperContainer { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public int SequenceNo { get; set; }
+
+    [Parameter]
+    public string Name { get; set; }
+
+    [Parameter]
+    public string Navigation { get; set; }
+
+    public int CurrentStep { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        StepperContainer.AddStepperItem(this);
+    }
+
+    private void NavigateToStep(int idx)
+    {
+        StepperContainer.NavigateToStep(idx);
+    }
+}
